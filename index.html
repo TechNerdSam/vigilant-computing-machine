@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyseur de Lataif Soufi v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Playfair Display', serif;
+        }
+        .aura-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        .video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Effet miroir */
+        }
+        .glowing-button {
+            transition: all 0.3s ease;
+        }
+        .glowing-button:hover {
+            box-shadow: 0 0 20px 5px rgba(79, 70, 229, 0.6);
+            transform: translateY(-2px);
+        }
+        .result-card {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: background-color 0.5s ease, border-color 0.5s ease;
+        }
+        .card-content {
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-indigo-900 to-black text-gray-200 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-7xl mx-auto bg-black bg-opacity-30 rounded-2xl shadow-2xl p-6 md:p-8 border border-gray-700">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-amber-300 mb-2">Analyseur des Lataif Soufis</h1>
+            <p class="text-lg text-gray-300 max-w-4xl mx-auto">
+                Observez en temps réel l'état de vos centres spirituels. L'analyse interprète les variations subtiles captées par votre webcam pour refléter votre état intérieur.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Colonne de la Webcam -->
+            <div class="flex flex-col items-center">
+                <div id="video-container" class="relative w-full max-w-lg mx-auto aspect-video bg-gray-900 rounded-lg overflow-hidden border-2 border-indigo-500 shadow-lg">
+                    <video id="webcam-feed" class="video-feed" autoplay muted playsinline></video>
+                    <canvas id="aura-canvas" class="aura-canvas"></canvas>
+                    <div id="start-message" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 z-10">
+                        <p class="text-gray-300 mb-4">Cliquez pour commencer l'analyse en direct.</p>
+                        <button id="start-scan-btn" class="glowing-button bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg hover:bg-indigo-500">
+                            Activer la Caméra
+                        </button>
+                    </div>
+                     <div id="loading-spinner" class="hidden absolute inset-0 flex items-center justify-center z-20 bg-black/50">
+                        <div class="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-amber-300"></div>
+                    </div>
+                </div>
+                 <button id="stop-scan-btn" class="hidden mt-4 glowing-button bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:bg-red-500">
+                    Stopper l'Analyse
+                </button>
+            </div>
+
+            <!-- Colonne des Résultats -->
+            <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Les cartes de résultats seront injectées ici par JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-gray-500 mt-6 text-sm">
+        <p>&copy; 2025 Analyseur de Lataif Soufi. Tous droits réservés.</p>
+        <p class="mt-1 max-w-3xl mx-auto">Avertissement : Cet outil est un projet technologique expérimental pour la contemplation. Il ne remplace pas un avis qualifié.</p>
+    </footer>
+
+    <script>
+        // --- Éléments du DOM ---
+        const startScanBtn = document.getElementById('start-scan-btn');
+        const stopScanBtn = document.getElementById('stop-scan-btn');
+        const startMessage = document.getElementById('start-message');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const webcamFeed = document.getElementById('webcam-feed');
+        const auraCanvas = document.getElementById('aura-canvas');
+        const auraCtx = auraCanvas.getContext('2d');
+        const resultsGrid = document.getElementById('results-grid');
+        const videoContainer = document.getElementById('video-container');
+
+        let animationFrameId = null;
+        let lastH = 0, lastS = 0, lastV = 0;
+
+        // --- Données des Lataif ---
+        // L'ordre est important : [0] = état positif/équilibré, [1] = état négatif/déséquilibré
+        const lataifData = [
+            {
+                id: "qalb",
+                name: "Qalb (Le Cœur)",
+                location: "Situé à gauche de la poitrine.",
+                color: { name: "Jaune", class: "amber-400" },
+                states: [
+                    { title: "Serein et Ouvert", interpretation: "Votre cœur est en paix, réceptif à la compassion. Un moment propice pour la connexion sincère.", advice: "Pratiquez la gratitude. Pensez à trois choses pour lesquelles vous êtes reconnaissant." },
+                    { title: "Agité et Fermé", interpretation: "Le Qalb est troublé par les préoccupations ou les émotions négatives, créant un sentiment de déconnexion.", advice: "Cherchez le calme dans la prière ou la méditation. Concentrez-vous sur votre respiration." }
+                ]
+            },
+            {
+                id: "ruh",
+                name: "Ruh (L'Esprit)",
+                location: "Situé à droite de la poitrine.",
+                color: { name: "Rouge", class: "red-500" },
+                states: [
+                    { title: "Élevé et Inspiré", interpretation: "Votre esprit est connecté à des inspirations supérieures. Votre intuition spirituelle est aiguisée.", advice: "Canalisez cette énergie dans une action créative ou un service désintéressé." },
+                    { title: "Lourd et Fatigué", interpretation: "L'esprit se sent accablé. L'inspiration est difficile à trouver.", advice: "Reposez-vous et passez du temps dans la nature. Nourrissez votre esprit avec de la beauté." }
+                ]
+            },
+            {
+                id: "sirr",
+                name: "Sirr (Le Secret)",
+                location: "Situé entre le Qalb et le Ruh.",
+                color: { name: "Blanc", class: "white" },
+                states: [
+                    { title: "Lumineux et Conscient", interpretation: "Le siège de la contemplation est actif. Vous percevez les réalités au-delà des apparences.", advice: "Maintenez cet état par une contemplation silencieuse (Muraqaba) sur les attributs divins." },
+                    { title: "Voilé et Obscurci", interpretation: "Le 'secret' est obscurci par l'attachement ou le bavardage mental. La vision intérieure est floue.", advice: "Simplifiez votre esprit. Pratiquez le jeûne de paroles inutiles." }
+                ]
+            },
+            {
+                id: "khafi",
+                name: "Khafi (Le Caché)",
+                location: "Au-dessus du Sirr, vers le front.",
+                color: { name: "Noir", class: "white" },
+                states: [
+                    { title: "Paisible et Stable", interpretation: "Cet aspect profond est en état de quiétude, au-delà des pensées et des émotions.", advice: "Goûtez à ce silence. C'est le fondement de la véritable paix." },
+                    { title: "Perturbé et Instable", interpretation: "Des peurs profondes peuvent perturber cette tranquillité. Une anxiété subtile sans cause apparente.", advice: "Affirmez votre confiance (Tawakkul) en Dieu. Répétez des noms divins apaisants." }
+                ]
+            },
+            {
+                id: "akhfa",
+                name: "Akhfa (Le Plus Caché)",
+                location: "Au centre du cerveau.",
+                color: { name: "Vert", class: "emerald-500" },
+                states: [
+                    { title: "En Unité (Fana)", interpretation: "Un aperçu de l'Unité (Tawhid), un état de pure conscience sans sentiment de séparation.", advice: "Cet état ne peut être 'fait', mais seulement reçu. Continuez votre pratique avec humilité." },
+                    { title: "Endormi et Inconscient", interpretation: "Le potentiel de ce centre n'est pas encore éveillé. La conscience est identifiée avec le soi individuel.", advice: "Le chemin est un voyage progressif. La persévérance purifie les autres centres, préparant cet éveil." }
+                ]
+            },
+            {
+                id: "nafs",
+                name: "Nafs (L'Ego / Le Soi)",
+                location: "Point central sous le nombril.",
+                color: { name: "Fumée", class: "slate-500" },
+                states: [
+                    { title: "Pacifié (Mutma'inna)", interpretation: "Votre ego est en paix et aligné avec la volonté divine. Il sert de véhicule pour le bien.", advice: "Restez vigilant et reconnaissant. Maintenez cet état par l'humilité et le service." },
+                    { title: "Impérieux (Ammara)", interpretation: "L'ego dicte des désirs impulsifs, la colère ou l'orgueil. Une lutte intérieure constante.", advice: "Observez vos impulsions sans jugement. Pratiquez l'autodiscipline (Mujahada)." }
+                ]
+            }
+        ];
+        
+        // --- Initialisation ---
+        function initializeUI() {
+            resultsGrid.innerHTML = '';
+            lataifData.forEach(latifa => {
+                const state = latifa.states[1]; // Démarrer avec l'état par défaut (négatif/endormi)
+                const cardHTML = `
+                    <div id="card-${latifa.id}" class="result-card bg-gray-800 bg-opacity-50 border-2 border-slate-600 rounded-xl p-4 shadow-lg text-left h-full flex flex-col">
+                        <div class="flex items-center mb-2">
+                            <div class="w-3 h-3 rounded-full bg-${latifa.color.class} mr-2"></div>
+                            <h3 class="text-lg font-bold text-${latifa.color.class}">${latifa.name}</h3>
+                        </div>
+                        <div class="card-content">
+                           <h4 class="text-md font-semibold text-white mb-1">${state.title}</h4>
+                           <p class="text-xs text-gray-300">${state.interpretation}</p>
+                        </div>
+                    </div>
+                `;
+                resultsGrid.innerHTML += cardHTML;
+            });
+        }
+
+        // --- Logique d'analyse ---
+        function rgbToHsv(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            let max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, v = max;
+            let d = max - min;
+            s = max == 0 ? 0 : d / max;
+            if (max == min) {
+                h = 0;
+            } else {
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return [h, s, v];
+        }
+
+        function analyzeFrame() {
+            if (!webcamFeed.srcObject || webcamFeed.paused || webcamFeed.ended) {
+                return;
+            }
+            
+            // Dessiner la vidéo sur le canvas pour l'analyse
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = webcamFeed.videoWidth;
+            tempCanvas.height = webcamFeed.videoHeight;
+            const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+            tempCtx.drawImage(webcamFeed, 0, 0, tempCanvas.width, tempCanvas.height);
+            
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+            let r = 0, g = 0, b = 0, count = 0;
+
+            // Échantillonner les pixels pour la performance
+            for (let i = 0; i < data.length; i += 20) {
+                r += data[i];
+                g += data[i + 1];
+                b += data[i + 2];
+                count++;
+            }
+            
+            const avgR = Math.floor(r / count);
+            const avgG = Math.floor(g / count);
+            const avgB = Math.floor(b / count);
+
+            const [h, s, v] = rgbToHsv(avgR, avgG, avgB);
+
+            updateLataifResults(h, s, v);
+            drawAura(avgR, avgG, avgB);
+            
+            animationFrameId = requestAnimationFrame(analyzeFrame);
+        }
+
+        function updateLataifResults(h, s, v) {
+            // Calculer la stabilité
+            const stability = 1 - (Math.abs(h - lastH) + Math.abs(s - lastS) + Math.abs(v - lastV)) / 3;
+            lastH = h; lastS = s; lastV = v;
+
+            const hue = h * 360;
+
+            // Qalb (Cœur) -> Dépend de la Teinte (vert/jaune = positif)
+            const qalbState = (hue > 45 && hue < 160) ? 0 : 1;
+            
+            // Ruh (Esprit) -> Dépend de la Luminosité (Value)
+            const ruhState = (v > 0.6) ? 0 : 1;
+            
+            // Sirr (Secret) -> Dépend de la Saturation
+            const sirrState = (s > 0.5) ? 0 : 1;
+            
+            // Khafi (Caché) -> Dépend de la Stabilité de l'aura
+            const khafiState = (stability > 0.95) ? 0 : 1;
+            
+            // Akhfa (Le Plus Caché) -> État rare, haute lumière, basse couleur
+            const akhfaState = (v > 0.8 && s < 0.2) ? 0 : 1;
+
+            // Nafs (Ego) -> Dépend de la Teinte (rouge/orange = négatif)
+            const nafsState = (hue > 330 || hue < 40) ? 1 : 0;
+
+            const states = { qalb: qalbState, ruh: ruhState, sirr: sirrState, khafi: khafiState, akhfa: akhfaState, nafs: nafsState };
+
+            lataifData.forEach(latifa => {
+                const card = document.getElementById(`card-${latifa.id}`);
+                const content = card.querySelector('.card-content');
+                const newState = latifa.states[states[latifa.id]];
+
+                content.querySelector('h4').textContent = newState.title;
+                content.querySelector('p').textContent = newState.interpretation;
+            });
+        }
+
+        function drawAura(r, g, b) {
+            const { width, height } = auraCanvas;
+            auraCtx.clearRect(0, 0, width, height);
+
+            const gradient = auraCtx.createRadialGradient(
+                width / 2, height / 2, width * 0.1,
+                width / 2, height / 2, width * 0.5
+            );
+            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.7)`);
+            gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+            
+            auraCtx.globalCompositeOperation = 'lighter';
+            auraCtx.fillStyle = gradient;
+            auraCtx.fillRect(0, 0, width, height);
+            auraCtx.globalCompositeOperation = 'source-over';
+        }
+
+        // --- Contrôles de la Webcam ---
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' },
+                    audio: false 
+                });
+                webcamFeed.srcObject = stream;
+                webcamFeed.onloadedmetadata = () => {
+                    const { clientWidth, clientHeight } = videoContainer;
+                    auraCanvas.width = clientWidth;
+                    auraCanvas.height = clientHeight;
+
+                    webcamFeed.play();
+                    startMessage.classList.add('hidden');
+                    loadingSpinner.classList.add('hidden');
+                    stopScanBtn.classList.remove('hidden');
+                    animationFrameId = requestAnimationFrame(analyzeFrame);
+                };
+            } catch (err) {
+                console.error("Erreur d'accès à la caméra:", err);
+                startMessage.innerHTML = `<p class="text-red-400">Impossible d'accéder à la caméra. Veuillez vérifier les autorisations.</p>`;
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        function stopCamera() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            if (webcamFeed.srcObject) {
+                webcamFeed.srcObject.getTracks().forEach(track => track.stop());
+                webcamFeed.srcObject = null;
+            }
+            auraCtx.clearRect(0, 0, auraCanvas.width, auraCanvas.height);
+            stopScanBtn.classList.add('hidden');
+            startMessage.classList.remove('hidden');
+            initializeUI(); // Réinitialiser à l'état par défaut
+        }
+
+        // --- Écouteurs d'événements ---
+        startScanBtn.addEventListener('click', () => {
+            startMessage.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+            startCamera();
+        });
+
+        stopScanBtn.addEventListener('click', stopCamera);
+
+        // Lancer l'initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', initializeUI);
+    </script>
+</body>
+</html>
+
