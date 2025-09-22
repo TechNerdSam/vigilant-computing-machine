@@ -81,8 +81,13 @@
             </div>
 
             <!-- Colonne des Résultats -->
-            <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Les cartes de résultats seront injectées ici par JavaScript -->
+            <div id="results-container" class="relative min-h-[300px] md:min-h-full">
+                <div id="results-placeholder" class="absolute inset-0 flex items-center justify-center text-center text-gray-400 bg-gray-800 bg-opacity-50 rounded-xl p-4 z-10 transition-opacity duration-500">
+                    <p>Les résultats s'afficheront ici lorsque l'analyse commencera.</p>
+                </div>
+                <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-0 transition-opacity duration-500 h-full">
+                    <!-- Les cartes de résultats seront injectées ici par JavaScript -->
+                </div>
             </div>
         </div>
     </div>
@@ -102,6 +107,7 @@
         const auraCanvas = document.getElementById('aura-canvas');
         const auraCtx = auraCanvas.getContext('2d');
         const resultsGrid = document.getElementById('results-grid');
+        const resultsPlaceholder = document.getElementById('results-placeholder');
         const videoContainer = document.getElementById('video-container');
 
         let animationFrameId = null;
@@ -218,7 +224,6 @@
                 return;
             }
             
-            // Dessiner la vidéo sur le canvas pour l'analyse
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = webcamFeed.videoWidth;
             tempCanvas.height = webcamFeed.videoHeight;
@@ -229,7 +234,6 @@
             const data = imageData.data;
             let r = 0, g = 0, b = 0, count = 0;
 
-            // Échantillonner les pixels pour la performance
             for (let i = 0; i < data.length; i += 20) {
                 r += data[i];
                 g += data[i + 1];
@@ -250,28 +254,16 @@
         }
 
         function updateLataifResults(h, s, v) {
-            // Calculer la stabilité
             const stability = 1 - (Math.abs(h - lastH) + Math.abs(s - lastS) + Math.abs(v - lastV)) / 3;
             lastH = h; lastS = s; lastV = v;
 
             const hue = h * 360;
 
-            // Qalb (Cœur) -> Dépend de la Teinte (vert/jaune = positif)
             const qalbState = (hue > 45 && hue < 160) ? 0 : 1;
-            
-            // Ruh (Esprit) -> Dépend de la Luminosité (Value)
             const ruhState = (v > 0.6) ? 0 : 1;
-            
-            // Sirr (Secret) -> Dépend de la Saturation
             const sirrState = (s > 0.5) ? 0 : 1;
-            
-            // Khafi (Caché) -> Dépend de la Stabilité de l'aura
             const khafiState = (stability > 0.95) ? 0 : 1;
-            
-            // Akhfa (Le Plus Caché) -> État rare, haute lumière, basse couleur
             const akhfaState = (v > 0.8 && s < 0.2) ? 0 : 1;
-
-            // Nafs (Ego) -> Dépend de la Teinte (rouge/orange = négatif)
             const nafsState = (hue > 330 || hue < 40) ? 1 : 0;
 
             const states = { qalb: qalbState, ruh: ruhState, sirr: sirrState, khafi: khafiState, akhfa: akhfaState, nafs: nafsState };
@@ -320,6 +312,11 @@
                     startMessage.classList.add('hidden');
                     loadingSpinner.classList.add('hidden');
                     stopScanBtn.classList.remove('hidden');
+
+                    initializeUI();
+                    resultsPlaceholder.classList.add('opacity-0');
+                    resultsGrid.classList.remove('opacity-0');
+
                     animationFrameId = requestAnimationFrame(analyzeFrame);
                 };
             } catch (err) {
@@ -341,7 +338,12 @@
             auraCtx.clearRect(0, 0, auraCanvas.width, auraCanvas.height);
             stopScanBtn.classList.add('hidden');
             startMessage.classList.remove('hidden');
-            initializeUI(); // Réinitialiser à l'état par défaut
+            
+            resultsPlaceholder.classList.remove('opacity-0');
+            resultsGrid.classList.add('opacity-0');
+            setTimeout(() => {
+                resultsGrid.innerHTML = ''; // Vider après la transition
+            }, 500);
         }
 
         // --- Écouteurs d'événements ---
@@ -352,9 +354,6 @@
         });
 
         stopScanBtn.addEventListener('click', stopCamera);
-
-        // Lancer l'initialisation au chargement de la page
-        document.addEventListener('DOMContentLoaded', initializeUI);
     </script>
 </body>
 </html>
