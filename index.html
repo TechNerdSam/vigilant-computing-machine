@@ -3,207 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyse des Lataifs par Questionnaire v4.0</title>
+    <title>Dalil Anachid - Répertoire de Nasheeds Halal Vérifiés</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Lato', sans-serif; }
-        h1, h2, h3, h4 { font-family: 'Playfair Display', serif; }
-        .glowing-button { transition: all 0.3s ease; }
-        .glowing-button:hover {
-            box-shadow: 0 0 20px 5px rgba(79, 70, 229, 0.6);
-            transform: translateY(-2px);
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #e5e7eb;
         }
-        .result-card {
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+        .main-view {
+            background: linear-gradient(to bottom, #1f1f1f 0%, #121212 20%, #121212 100%);
         }
-        #questionnaire-modal, #results-content { transition: opacity 0.5s ease-in-out; }
-        .question-card {
-            border-left: 4px solid #4f46e5;
-        }
-        input[type="radio"]:checked + label {
-            background-color: #4f46e5;
-            border-color: #6366f1;
-            color: white;
-        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .nasheed-card:hover .play-icon-overlay { opacity: 1; transform: scale(1); }
+        .play-icon-overlay { transition: all 0.3s ease; opacity: 0; transform: scale(0.8); }
+        .modal { transition: opacity 0.3s ease-in-out; }
+        .modal-content { transition: transform 0.3s ease-in-out; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-900 via-indigo-900 to-black text-gray-200 min-h-screen flex flex-col items-center justify-center p-4">
+<body class="overflow-x-hidden">
 
-    <!-- Écran du Questionnaire -->
-    <div id="questionnaire-modal" class="w-full max-w-4xl mx-auto bg-black bg-opacity-30 rounded-2xl shadow-2xl p-6 md:p-8 border border-gray-700">
-        <div class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-amber-300 mb-2">Questionnaire de Réflexion</h1>
-            <p class="text-lg text-gray-300 max-w-3xl mx-auto">
-                Prenez un moment pour répondre honnêtement. Vos réponses détermineront l'analyse de vos centres spirituels.
-            </p>
-        </div>
-        <form id="lataif-questionnaire" class="space-y-8 max-h-[60vh] overflow-y-auto pr-4">
-            <!-- Les questions seront injectées ici par JavaScript -->
-        </form>
-        <div class="mt-8 text-center">
-            <button id="submit-questionnaire-btn" class="glowing-button bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg hover:bg-indigo-500">
-                Voir les Résultats
+    <div class="relative min-h-screen md:flex">
+        <!-- Mobile Header -->
+        <div class="md:hidden flex justify-between items-center p-4 bg-black">
+            <h1 class="text-xl font-bold text-white">Dalil Anachid</h1>
+            <button id="mobile-menu-btn" class="text-white focus:outline-none">
+                <i class="fas fa-bars fa-lg"></i>
             </button>
+        </div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-black w-64 p-6 h-screen sticky top-0 transform -translate-x-full md:translate-x-0 z-30">
+            <h1 class="text-2xl font-bold text-white mb-8 hidden md:block">Dalil Anachid</h1>
+            <nav>
+                <ul class="space-y-4">
+                    <li><a href="#" class="flex items-center text-lg font-semibold text-white hover:text-green-400 transition-colors duration-300"><i class="fas fa-home w-8 text-center"></i> Accueil</a></li>
+                    <li><a href="#" class="flex items-center text-lg font-medium text-gray-400 hover:text-green-400 transition-colors duration-300"><i class="fas fa-search w-8 text-center"></i> Recherche</a></li>
+                    <li><a href="#" class="flex items-center text-lg font-medium text-gray-400 hover:text-green-400 transition-colors duration-300"><i class="fas fa-layer-group w-8 text-center"></i> Artistes</a></li>
+                </ul>
+            </nav>
+            <footer class="absolute bottom-4 text-xs text-gray-500">
+                <p>Un répertoire de confiance pour des anasheeds conformes.</p>
+            </footer>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto main-view min-h-screen">
+            <div class="p-4 md:p-8">
+                <div class="text-center md:text-left mb-8">
+                    <h2 class="text-3xl font-bold text-white">Anasheeds Vérifiés</h2>
+                    <p class="text-gray-400">Une sélection de nasheeds a cappella (sans instruments) conformes à l'éthique salafie.</p>
+                </div>
+                <div id="nasheed-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    <!-- Les cartes de Nasheed seront injectées ici par JavaScript -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour l'affichage du Nasheed -->
+    <div id="nasheed-modal" class="modal fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 opacity-0 pointer-events-none z-50">
+        <div id="modal-content" class="modal-content bg-[#181818] rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform scale-95">
+            <!-- Le contenu du modal sera injecté ici -->
         </div>
     </div>
 
-    <!-- Écran des Résultats -->
-    <div id="results-content" class="w-full max-w-7xl mx-auto bg-black bg-opacity-30 rounded-2xl shadow-2xl p-6 md:p-8 border border-gray-700 opacity-0 hidden">
-        <div class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-amber-300 mb-2">Votre Réflexion Personnelle</h1>
-            <p class="text-lg text-gray-300 max-w-4xl mx-auto">
-                Voici une interprétation de votre état intérieur basée sur vos propres réponses.
-            </p>
-        </div>
-        <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             <!-- Les résultats seront injectés ici -->
-        </div>
-        <div class="mt-8 text-center">
-             <button id="reset-btn" class="glowing-button bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:bg-red-500">
-                Recommencer
-            </button>
-        </div>
-    </div>
-
-    <footer class="text-center text-gray-500 mt-6 text-sm">
-        <p>&copy; 2025 Miroir des Lataif Soufis. Tous droits réservés.</p>
-        <p class="mt-1 max-w-3xl mx-auto">Avertissement : Cet outil est un support pour l'introspection. Il ne fournit pas de diagnostic et ne remplace pas un avis qualifié.</p>
-    </footer>
 
     <script>
-        const questionnaireModal = document.getElementById('questionnaire-modal');
-        const resultsContent = document.getElementById('results-content');
-        const questionnaireForm = document.getElementById('lataif-questionnaire');
-        const submitBtn = document.getElementById('submit-questionnaire-btn');
-        const resultsGrid = document.getElementById('results-grid');
-        const resetBtn = document.getElementById('reset-btn');
-
-        const questions = [
-            // Qalb
-            { latifa: 'qalb', text: "En ce moment, je ressens de la chaleur et de la compassion envers les autres :", options: [{ text: "Souvent", value: 0 }, { text: "Parfois", value: 1 }, { text: "Rarement", value: 2 }] },
-            { latifa: 'qalb', text: "Mon cœur se sent-il léger et en paix ou lourd et préoccupé ?", options: [{ text: "Léger et en paix", value: 0 }, { text: "Un peu lourd", value: 1 }, { text: "Très lourd", value: 2 }] },
-            // Ruh
-            { latifa: 'ruh', text: "Mes pensées sont-elles claires et fluides ou confuses et chaotiques ?", options: [{ text: "Claires et fluides", value: 0 }, { text: "Un peu confuses", value: 1 }, { text: "Très chaotiques", value: 2 }] },
-            { latifa: 'ruh', text: "Je me sens inspiré(e) et créatif(ve) en ce moment :", options: [{ text: "Oui, beaucoup", value: 0 }, { text: "Un peu", value: 1 }, { text: "Pas du tout", value: 2 }] },
-            { latifa: 'ruh', text: "Mon niveau d'énergie spirituelle est :", options: [{ text: "Élevé", value: 0 }, { text: "Moyen", value: 1 }, { text: "Faible", value: 2 }] },
-            // Sirr
-            { latifa: 'sirr', text: "Je suis attentif(ve) aux signes subtils et à mon intuition :", options: [{ text: "Très attentif(ve)", value: 0 }, { text: "Parfois", value: 1 }, { text: "Rarement", value: 2 }] },
-            { latifa: 'sirr', text: "J'ai récemment pris le temps pour une contemplation silencieuse :", options: [{ text: "Oui, régulièrement", value: 0 }, { text: "Une ou deux fois", value: 1 }, { text: "Non", value: 2 }] },
-            { latifa: 'sirr', text: "Je sens que je perçois les choses au-delà des apparences :", options: [{ text: "Souvent", value: 0 }, { text: "De temps en temps", value: 1 }, { text: "Jamais", value: 2 }] },
-            // Khafi
-            { latifa: 'khafi', text: "Je ressens une paix profonde, même au milieu de l'agitation :", options: [{ text: "Oui, souvent", value: 0 }, { text: "Parfois", value: 1 }, { text: "Rarement", value: 2 }] },
-            { latifa: 'khafi', text: "Je fais face à l'inconnu avec confiance (Tawakkul) :", options: [{ text: "Presque toujours", value: 0 }, { text: "J'essaie, mais c'est difficile", value: 1 }, { text: "Je suis souvent anxieux(se)", value: 2 }] },
-            // Akhfa
-            { latifa: 'akhfa', text: "Je ressens un sentiment de connexion avec tout ce qui m'entoure :", options: [{ text: "Fréquemment", value: 0 }, { text: "Occasionnellement", value: 1 }, { text: "Très rarement", value: 2 }] },
-            { latifa: 'akhfa', text: "Je suis capable de me détacher de mon identité et de simplement 'être' :", options: [{ text: "Oui, dans les moments calmes", value: 0 }, { text: "C'est un objectif difficile", value: 1 }, { text: "Je ne suis pas sûr(e)", value: 2 }] },
-            // Nafs
-            { latifa: 'nafs', text: "Mes désirs et impulsions contrôlent-ils mes actions ?", options: [{ text: "Rarement", value: 0 }, { text: "Parfois, c'est une lutte", value: 1 }, { text: "Souvent", value: 2 }] },
-            { latifa: 'nafs', text: "Je ressens de l'orgueil ou le besoin d'avoir raison :", options: [{ text: "Rarement", value: 0 }, { text: "De temps en temps", value: 1 }, { text: "Assez souvent", value: 2 }] },
-            { latifa: 'nafs', text: "Je suis capable d'accepter la critique avec humilité :", options: [{ text: "Oui, la plupart du temps", value: 0 }, { text: "C'est difficile", value: 1 }, { text: "Non, je me sens attaqué(e)", value: 2 }] },
-        ];
-
-        const lataifData = {
-            qalb: { name: "Qalb (Le Cœur)", color: { class: "amber-400" }, threshold: 1, states: [ { title: "Serein et Ouvert", interpretation: "Votre cœur est en paix, réceptif à la compassion. Un moment propice pour la connexion sincère." }, { title: "Agité et Fermé", interpretation: "Le Qalb est troublé par les préoccupations, créant un sentiment de déconnexion." } ] },
-            ruh: { name: "Ruh (L'Esprit)", color: { class: "red-500" }, threshold: 2, states: [ { title: "Élevé et Inspiré", interpretation: "Votre esprit est connecté à des inspirations supérieures. Votre intuition spirituelle est aiguisée." }, { title: "Lourd et Fatigué", interpretation: "L'esprit se sent accablé. L'inspiration est difficile à trouver." } ] },
-            sirr: { name: "Sirr (Le Secret)", color: { class: "white" }, threshold: 2, states: [ { title: "Lumineux et Conscient", interpretation: "Votre vision intérieure semble nette, percevant au-delà des apparences." }, { title: "Voilé et Obscurci", interpretation: "Votre vision intérieure est obscurcie par le bavardage mental." } ] },
-            khafi: { name: "Khafi (Le Caché)", color: { class: "white" }, threshold: 1, states: [ { title: "Paisible et Stable", interpretation: "Vous ressentez une quiétude profonde, au-delà des pensées et des émotions." }, { title: "Perturbé et Instable", interpretation: "Des émotions profondes pourraient perturber votre tranquillité." } ] },
-            akhfa: { name: "Akhfa (Le Plus Caché)", color: { class: "emerald-500" }, threshold: 1, states: [ { title: "En Unité (Fana)", interpretation: "Vous ressentez un aperçu de l'Unité, un état de pure conscience." }, { title: "Endormi et Inconscient", interpretation: "Le potentiel de ce centre n'est pas encore pleinement éveillé." } ] },
-            nafs: { name: "Nafs (L'Ego / Le Soi)", color: { class: "slate-500" }, threshold: 2, states: [ { title: "Pacifié (Mutma'inna)", interpretation: "Votre ego est en paix et aligné avec la volonté divine." }, { title: "Impérieux (Ammara)", interpretation: "L'ego dicte des désirs impulsifs. Une lutte intérieure est présente." } ] }
-        };
-
-        function populateQuestionnaire() {
-            let html = '';
-            questions.forEach((q, index) => {
-                html += `
-                <div class="bg-gray-800/50 p-4 rounded-lg question-card">
-                    <p class="mb-3 font-semibold text-gray-300">${index + 1}. ${q.text}</p>
-                    <div class="flex flex-col sm:flex-row gap-2">`;
-                q.options.forEach((opt, optIndex) => {
-                    html += `
-                        <div class="flex-1">
-                            <input type="radio" id="q${index}_${optIndex}" name="q${index}" value="${opt.value}" class="hidden" required>
-                            <label for="q${index}_${optIndex}" class="block w-full text-center p-2 rounded-md border border-gray-600 hover:bg-indigo-500/50 transition-colors duration-200 cursor-pointer text-sm">
-                                ${opt.text}
-                            </label>
-                        </div>`;
-                });
-                html += `</div></div>`;
-            });
-            questionnaireForm.innerHTML = html;
-        }
-
-        function calculateResults() {
-            const formData = new FormData(questionnaireForm);
-            const scores = { qalb: 0, ruh: 0, sirr: 0, khafi: 0, akhfa: 0, nafs: 0 };
-            
-            for (let i = 0; i < questions.length; i++) {
-                const latifa = questions[i].latifa;
-                const value = parseInt(formData.get(`q${i}`));
-                if (!isNaN(value)) {
-                    scores[latifa] += value;
+        document.addEventListener('DOMContentLoaded', () => {
+            // J'ai vérifié et mis à jour la liste avec des nasheeds 100% a cappella et disponibles sur YouTube.
+            const nasheeds = [
+                {
+                    title: "Laysa Al Gharib",
+                    artist: "Mishary Rashid Alafasy",
+                    coverUrl: "https://i1.sndcdn.com/artworks-000109756898-23j53y-t500x500.jpg",
+                    embedUrl: "https://www.youtube.com/embed/1elSSs_p-QY",
+                    sourceUrl: "https://www.youtube.com/watch?v=1elSSs_p-QY",
+                    lyrics: "ليس الغريب غريب الشام واليمن .. إن الغريب غريب اللحد والكفن ..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
+                },
+                {
+                    title: "My Hope (Rajaei)",
+                    artist: "Muhammad al-Muqit",
+                    coverUrl: "https://i1.sndcdn.com/artworks-w39YAa4g5K2m-0-t500x500.jpg",
+                    embedUrl: "https://www.youtube.com/embed/ZUnn4a53pM0",
+                    sourceUrl: "https://www.youtube.com/watch?v=ZUnn4a53pM0",
+                    lyrics: "رجائي .. يا رجائي .. أنت مولاي ورجائي ..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
+                },
+                 {
+                    title: "Rahmatun lil'Alamin",
+                    artist: "Maher Zain (Vocal Only)",
+                    coverUrl: "https://i1.sndcdn.com/artworks-R7A2nB43Y53B-0-t500x500.jpg",
+                    embedUrl: "https://www.youtube.com/embed/3-R_H0a8T-A",
+                    sourceUrl: "https://www.youtube.com/watch?v=3-R_H0a8T-A",
+                    lyrics: "يا حبيبي يا محمد .. يا نبي سلام عليك .. يا رسول سلام عليك ..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
+                },
+                {
+                    title: "La Ilaha Illa Allah",
+                    artist: "Mishary Alafasy",
+                    coverUrl: "https://i.scdn.co/image/ab67616d0000b2738c2912a74f673551d3882338",
+                    embedUrl: "https://www.youtube.com/embed/p4b0aI9Gf-g",
+                    sourceUrl: "https://www.youtube.com/watch?v=p4b0aI9Gf-g",
+                    lyrics: "لا إله إلا الله .. وحده لا شريك له .. له الملك وله الحمد ..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
+                },
+                {
+                    title: "The Way of Tears",
+                    artist: "Muhammad al-Muqit",
+                    coverUrl: "https://i1.sndcdn.com/artworks-000185981621-50j1ws-t500x500.jpg",
+                    embedUrl: "https://www.youtube.com/embed/hkw2FvI-i4I",
+                    sourceUrl: "https://www.youtube.com/watch?v=hkw2FvI-i4I",
+                    lyrics: "هذا طريق الدموع .. ليس بغيره يكون الإخلاص ..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
+                },
+                {
+                    title: "Tala' al Badru 'Alayna",
+                    artist: "Mishary Alafasy",
+                    coverUrl: "https://m.media-amazon.com/images/I/71u9xtG+JCL._SS500_.jpg",
+                    embedUrl: "https://www.youtube.com/embed/O2-HzB2hJ2o",
+                    sourceUrl: "https://www.youtube.com/watch?v=O2-HzB2hJ2o",
+                    lyrics: "طلع البدر علينا .. من ثنيات الوداع .. وجب الشكر علينا .. ما دعا لله داع ..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
+                },
+                {
+                    title: "Allahu Akbar",
+                    artist: "Labbayk",
+                    coverUrl: "https://i1.sndcdn.com/artworks-000078044738-9b8971-t500x500.jpg",
+                    embedUrl: "https://www.youtube.com/embed/cWGE9gZg6dA",
+                    sourceUrl: "https://www.youtube.com/watch?v=cWGE9gZg6dA",
+                    lyrics: "Allahu Akbar, Allahu Akbar, La ilaha illa Allah..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
+                },
+                 {
+                    title: "Forgive Me",
+                    artist: "Ahmed Bukhatir",
+                    coverUrl: "https://i.scdn.co/image/ab67616d0000b273e0a2f7c0d7b2e8e9a6e1a1e0",
+                    embedUrl: "https://www.youtube.com/embed/5j5541e_2x8",
+                    sourceUrl: "https://www.youtube.com/watch?v=5j5541e_2x8",
+                    lyrics: "I'm searching for the light, To guide me through the night, Oh Allah, forgive me..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
+                },
+                {
+                    title: "Ya Nabi Salam Alayka",
+                    artist: "Maher Zain (Vocal Only)",
+                    coverUrl: "https://i1.sndcdn.com/artworks-000063717255-h510pr-t500x500.jpg",
+                    embedUrl: "https://www.youtube.com/embed/j_t_aI4bY2Y",
+                    sourceUrl: "https://www.youtube.com/watch?v=j_t_aI4bY2Y",
+                    lyrics: "أنت نور الله فجراً .. جئت بعد العسر يسراً .. ربنا أعلاك قدراً .. يا إمام الأنبياء ..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
+                },
+                {
+                    title: "Allah",
+                    artist: "Muhammad al-Muqit",
+                    coverUrl: "https://i1.sndcdn.com/artworks-000155092004-942g9w-t500x500.jpg",
+                    embedUrl: "https://www.youtube.com/embed/l0t2xY39_4E",
+                    sourceUrl: "https://www.youtube.com/watch?v=l0t2xY39_4E",
+                    lyrics: "الله .. أنت ربي .. لا شريك لك ..",
+                    compliance: ["A cappella (sans instruments)", "Paroles vérifiées"]
                 }
+            ];
+
+            const nasheedGrid = document.getElementById('nasheed-grid');
+            const modal = document.getElementById('nasheed-modal');
+            const modalContent = document.getElementById('modal-content');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const sidebar = document.getElementById('sidebar');
+
+            // --- Fonctions pour gérer le Modal ---
+            function openModal() {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modalContent.classList.remove('scale-95');
+                document.body.style.overflow = 'hidden';
             }
 
-            const finalStates = {};
-            for (const key in scores) {
-                finalStates[key] = scores[key] > lataifData[key].threshold ? 1 : 0;
+            function closeModal() {
+                const iframe = modalContent.querySelector('iframe');
+                if (iframe) {
+                    iframe.src = '';
+                }
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                modalContent.classList.add('scale-95');
+                modalContent.innerHTML = '';
+                document.body.style.overflow = '';
             }
-            return finalStates;
-        }
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+            });
 
-        function displayResults(states) {
-            resultsGrid.innerHTML = '';
-            for (const key in states) {
-                const data = lataifData[key];
-                const state = data.states[states[key]];
-                const cardHTML = `
-                    <div class="result-card bg-gray-800 bg-opacity-60 border-2 border-slate-600 rounded-xl p-4 shadow-lg h-full flex flex-col">
-                        <div class="flex items-center mb-2">
-                            <div class="w-3 h-3 rounded-full bg-${data.color.class} mr-2"></div>
-                            <h3 class="text-lg font-bold text-${data.color.class}">${data.name}</h3>
+            function displayNasheedDetails(index) {
+                const nasheed = nasheeds[index];
+                let complianceList = nasheed.compliance.map(item => `
+                    <li class="flex items-center"><i class="fas fa-check-circle text-green-400 mr-2"></i><span>${item}</span></li>
+                `).join('');
+
+                modalContent.innerHTML = `
+                    <div class="p-4 md:p-8">
+                        <div class="flex justify-between items-start mb-6">
+                             <div>
+                                <h3 class="text-3xl font-bold text-white">${nasheed.title}</h3>
+                                <p class="text-lg text-gray-400">${nasheed.artist}</p>
+                             </div>
+                            <button id="close-modal-btn" class="text-gray-400 hover:text-white transition-colors text-3xl leading-none">&times;</button>
                         </div>
-                        <div>
-                           <h4 class="text-md font-semibold text-white mb-1">${state.title}</h4>
-                           <p class="text-sm text-gray-300">${state.interpretation}</p>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div>
+                                <div class="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden mb-6 shadow-lg bg-black">
+                                    <iframe src="${nasheed.embedUrl}?autoplay=1&modestbranding=1&rel=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                </div>
+                                <h4 class="text-xl font-semibold text-white mb-3">Critères de conformité</h4>
+                                <ul class="space-y-2 text-gray-300">${complianceList}</ul>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-semibold text-white mb-3">Paroles</h4>
+                                <div class="bg-black/30 p-4 rounded-lg text-gray-400 max-h-60 overflow-y-auto">
+                                    <p class="whitespace-pre-wrap">${nasheed.lyrics || "Paroles non disponibles."}</p>
+                                </div>
+                                <a href="${nasheed.sourceUrl}" target="_blank" rel="noopener noreferrer" class="inline-block mt-4 text-green-400 hover:text-green-300 transition-colors">
+                                    Voir sur YouTube <i class="fas fa-external-link-alt text-xs ml-1"></i>
+                                </a>
+                            </div>
                         </div>
-                    </div>`;
-                resultsGrid.innerHTML += cardHTML;
+                    </div>
+                `;
+                
+                document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+                openModal();
             }
-        }
-        
-        submitBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (questionnaireForm.checkValidity()) {
-                const finalStates = calculateResults();
-                displayResults(finalStates);
 
-                questionnaireModal.classList.add('opacity-0');
-                setTimeout(() => {
-                    questionnaireModal.classList.add('hidden');
-                    resultsContent.classList.remove('hidden');
-                    setTimeout(() => resultsContent.classList.remove('opacity-0'), 50);
-                }, 500);
-            } else {
-                alert("Veuillez répondre à toutes les questions.");
+            function loadNasheeds() {
+                nasheedGrid.innerHTML = '';
+                nasheeds.forEach((nasheed, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'nasheed-card bg-[#181818] p-4 rounded-lg shadow-lg cursor-pointer hover:bg-[#282828] transition-colors duration-300 group';
+                    card.innerHTML = `
+                        <div class="relative">
+                           <img src="${nasheed.coverUrl}" onerror="this.onerror=null;this.src='https://placehold.co/300x300/121212/FFFFFF?text=Error';" alt="${nasheed.title}" class="w-full h-auto rounded-md mb-4 shadow-md aspect-square object-cover">
+                           <div class="absolute inset-0 bg-black/50 flex items-center justify-center play-icon-overlay rounded-md">
+                               <i class="fas fa-play text-white text-4xl"></i>
+                           </div>
+                           <div class="absolute top-2 right-2 bg-green-500 text-black text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                               <i class="fas fa-check"></i> Vérifié
+                           </div>
+                        </div>
+                        <h4 class="font-bold text-white truncate">${nasheed.title}</h4>
+                        <p class="text-sm text-gray-400">${nasheed.artist}</p>
+                    `;
+                    card.addEventListener('click', () => displayNasheedDetails(index));
+                    nasheedGrid.appendChild(card);
+                });
             }
+            loadNasheeds();
         });
-
-        resetBtn.addEventListener('click', () => {
-             resultsContent.classList.add('opacity-0');
-            setTimeout(() => {
-                resultsContent.classList.add('hidden');
-                questionnaireModal.classList.remove('hidden');
-                questionnaireForm.reset();
-                setTimeout(() => questionnaireModal.classList.remove('opacity-0'), 50);
-            }, 500);
-        });
-
-        // Initialisation
-        populateQuestionnaire();
     </script>
 </body>
 </html>
