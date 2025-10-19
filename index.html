@@ -59,6 +59,7 @@
         #audio-progress-bar::-webkit-slider-runnable-track { background: var(--bg-surface); height: 4px; border-radius: 2px; }
         #audio-progress-bar::-webkit-slider-thumb { -webkit-appearance: none; margin-top: -6px; height: 16px; width: 16px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 5px var(--primary); }
         .prose { color: var(--text-muted); } .prose strong { color: var(--text-main); }
+        #note-textarea { color: black; }
         html.theme-sepia .text-main, html.theme-sepia .text-white { color: var(--text-main) !important; }
         html.theme-sepia .text-text-muted { color: var(--text-muted) !important; }
         
@@ -125,7 +126,7 @@
             <div class="p-2 border-b border-white/10 flex justify-between items-center">
                 <div class="flex bg-base rounded-md p-1">
                     <button class="context-tab active w-1/2 p-2 rounded text-sm font-bold" data-tab="tools">Outils</button>
-                    <button class="context-tab w-1/2 p-2 rounded text-sm font-bold" data-tab="tafsir">Tafsir</button>
+                    <button class="context-tab w-1/2 p-2 rounded text-sm font-bold" data-tab="notes">Notes</button>
                 </div>
                 <button id="close-context-panel-btn" class="lg:hidden text-text-muted hover:text-main mr-2"><i class="fas fa-times fa-lg"></i></button>
             </div>
@@ -141,9 +142,9 @@
     document.addEventListener('DOMContentLoaded', () => {
         const state = {
             surahs: [],
-            tafsirData: {},
             lastRead: JSON.parse(localStorage.getItem('lastRead')) || { surah: 1, ayah: 1 },
             bookmarks: JSON.parse(localStorage.getItem('quranBookmarks')) || [],
+            notes: JSON.parse(localStorage.getItem('quranNotes')) || {},
             history: JSON.parse(localStorage.getItem('quranHistory')) || [],
             settings: JSON.parse(localStorage.getItem('quranSettings')) || {
                 theme: 'theme-warm', fontSize: 18, translation: 'fr.hamidullah', reciter: 'ar.alafasy',
@@ -176,7 +177,6 @@
         };
         
         const QURAN_API_BASE = 'https://api.alquran.cloud/v1';
-        const TAFSIR_API_BASE = 'https://api.qurancdn.com/api/qdc';
         const TRANSLATIONS = { 'fr.hamidullah': 'M. Hamidullah', 'fr.leclerc': 'S. Leclerc' };
         const RECITERS = { 'ar.alafasy': 'Mishary Alafasy', 'ar.abdulbasitmurattal': 'Abdul Basit', 'ar.husary': 'Al-Husary' };
         const PLAYBACK_SPEEDS = [0.75, 1, 1.5, 2];
@@ -237,6 +237,7 @@
         const saveSettings = () => localStorage.setItem('quranSettings', JSON.stringify(state.settings));
         const saveLastRead = () => localStorage.setItem('lastRead', JSON.stringify(state.lastRead));
         const saveBookmarks = () => localStorage.setItem('quranBookmarks', JSON.stringify(state.bookmarks));
+        const saveNotes = () => localStorage.setItem('quranNotes', JSON.stringify(state.notes));
         const saveHistory = () => localStorage.setItem('quranHistory', JSON.stringify(state.history));
         
         const applySettings = () => {
@@ -255,7 +256,7 @@
                     <ul class="list-disc list-inside space-y-2">
                         <li><strong class="text-main">Explorez :</strong> Naviguez par sourate ou par Juz.</li>
                         <li><strong class="text-main">Écoutez :</strong> Choisissez votre récitateur préféré.</li>
-                        <li><strong class="text-main">Étudiez :</strong> Lisez les traductions et le Tafsir.</li>
+                        <li><strong class="text-main">Étudiez :</strong> Lisez les traductions et prenez des notes.</li>
                         <li><strong class="text-main">Personnalisez :</strong> Adaptez l'affichage à vos préférences dans les réglages.</li>
                     </ul>
                     <p>Cliquez sur un verset pour commencer.</p>
@@ -316,7 +317,6 @@
                 dom.surahHeaderH2.textContent = 'Chargement...';
                 dom.surahHeaderP.textContent = '...';
              }
-             state.tafsirData[surahNumber] = null;
              const endpoints = [
                  `${QURAN_API_BASE}/surah/${surahNumber}`, `${QURAN_API_BASE}/surah/${surahNumber}/${state.settings.translation}`,
                  `${QURAN_API_BASE}/surah/${surahNumber}/${state.settings.reciter}`, `${QURAN_API_BASE}/surah/${surahNumber}/en.transliteration`,
@@ -386,19 +386,20 @@
                         renderContextPanel('tools', true);
                     };
                     break;
-                case 'tafsir':
-                    if (!state.tafsirData[surahNum]) {
-                        const tafsirRes = await fetchAPI(`${TAFSIR_API_BASE}/tafsirs/1/by_chapter/${surahNum}?per_page=500`);
-                        if(tafsirRes && tafsirRes.tafsirs) {
-                            state.tafsirData[surahNum] = tafsirRes.tafsirs;
-                        } else {
-                            dom.contextContent.innerHTML = '<p>Erreur de chargement du Tafsir.</p>';
-                            return;
-                        }
-                    }
-                    const tafsir = state.tafsirData[surahNum]?.find(t => t.verse_key === `${surahNum}:${ayahNum}`);
-                    const tafsirText = tafsir ? tafsir.text.replace(/<[^>]*>/g, '') : 'Tafsir non disponible pour ce verset.';
-                    dom.contextContent.innerHTML = `<div class="prose">${tafsirText}</div>`;
+                case 'notes':
+                    const noteKey = `${surahNum}:${ayahNum}`;
+                    const noteText = state.notes[noteKey] || '';
+                    dom.contextContent.innerHTML = `
+                        <h3 class="font-bold text-lg mb-2 text-main">Mes Notes sur ${surahNum}:${ayahNum}</h3>
+                        <textarea id="note-textarea" class="w-full bg-white border border-surface rounded-md p-2 h-48 resize-none">${noteText}</textarea>
+                        <button id="save-note-btn" class="mt-2 w-full bg-primary text-bg-deep font-bold py-2 rounded-md hover:opacity-90">Sauvegarder</button>
+                    `;
+                    document.getElementById('save-note-btn').onclick = () => {
+                        const text = document.getElementById('note-textarea').value;
+                        if (text.trim()) state.notes[noteKey] = text; else delete state.notes[noteKey];
+                        saveNotes();
+                        showNotification('Note sauvegardée !');
+                    };
                     break;
             }
         };
@@ -407,9 +408,7 @@
             if (!state.currentSurahData || !state.currentSurahData.audio.ayahs[state.currentAyah - 1]) return;
             try {
                 const audioSrc = state.currentSurahData.audio.ayahs[state.currentAyah - 1].audio;
-                if (dom.audio.src !== audioSrc) {
-                    dom.audio.src = audioSrc;
-                }
+                if (dom.audio.src !== audioSrc) dom.audio.src = audioSrc;
                 await dom.audio.play();
             } catch (error) {
                 if (error.name !== 'AbortError') {
