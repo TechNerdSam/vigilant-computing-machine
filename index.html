@@ -47,6 +47,7 @@
         #audio-progress-bar { -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; width: 100%;}
         #audio-progress-bar::-webkit-slider-runnable-track { background: var(--bg-surface); height: 4px; border-radius: 2px; }
         #audio-progress-bar::-webkit-slider-thumb { -webkit-appearance: none; margin-top: -6px; height: 16px; width: 16px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 5px var(--primary); }
+        .prose { color: var(--text-muted); } .prose strong { color: var(--text-main); }
     </style>
 </head>
 <body class="overflow-hidden">
@@ -70,10 +71,7 @@
         <!-- CONTENU PRINCIPAL -->
         <main id="main-content" class="main-content flex-1 h-screen flex flex-col overflow-hidden">
             <header class="flex-shrink-0 p-4 border-b border-white/10 flex items-center justify-between z-10 bg-base/80 backdrop-blur-sm">
-                <div class="flex items-center">
-                    <button id="menu-btn" class="md:hidden text-text-muted hover:text-white mr-4"><i class="fas fa-bars fa-lg"></i></button>
-                    <div id="surah-header"><h2 class="text-xl font-bold text-white"></h2><p class="text-sm text-text-muted"></p></div>
-                </div>
+                <div class="flex items-center"><button id="menu-btn" class="md:hidden text-text-muted hover:text-white mr-4"><i class="fas fa-bars fa-lg"></i></button><div id="surah-header"><h2 class="text-xl font-bold text-white"></h2><p class="text-sm text-text-muted"></p></div></div>
                 <div class="flex items-center space-x-2">
                     <button id="play-surah-btn" class="w-10 h-10 rounded-full hover:bg-surface text-text-muted hover:text-white tooltip"><i class="fas fa-play"></i><span class="tooltip-text">Lire la sourate</span></button>
                     <button id="zen-mode-btn" class="w-10 h-10 rounded-full hover:bg-surface text-text-muted hover:text-white tooltip"><i class="fas fa-expand"></i><span class="tooltip-text">Mode Lecture</span></button>
@@ -120,7 +118,7 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const state = {
-            surahs: [], juzs: [], currentSurahData: null, currentAyah: 1, tafsirData: null,
+            surahs: [], juzs: [], currentSurahData: null, currentAyah: 1, tafsirData: {},
             lastRead: JSON.parse(localStorage.getItem('lastRead')) || { surah: 1, ayah: 1 },
             bookmarks: JSON.parse(localStorage.getItem('quranBookmarks')) || [],
             notes: JSON.parse(localStorage.getItem('quranNotes')) || {},
@@ -161,7 +159,6 @@
         const PLAYBACK_SPEEDS = [0.75, 1, 1.5, 2];
         const JUZ_START_POINTS = { 1:{s:1,a:1}, 2:{s:2,a:142}, 3:{s:2,a:253}, 4:{s:3,a:93}, 5:{s:4,a:24}, 6:{s:4,a:148}, 7:{s:5,a:82}, 8:{s:6,a:111}, 9:{s:7,a:88}, 10:{s:8,a:41}, 11:{s:9,a:93}, 12:{s:11,a:6}, 13:{s:12,a:53}, 14:{s:15,a:1}, 15:{s:17,a:1}, 16:{s:18,a:75}, 17:{s:21,a:1}, 18:{s:23,a:1}, 19:{s:25,a:21}, 20:{s:27,a:56}, 21:{s:29,a:46}, 22:{s:33,a:31}, 23:{s:36,a:28}, 24:{s:39,a:32}, 25:{s:41,a:47}, 26:{s:46,a:1}, 27:{s:51,a:31}, 28:{s:58,a:1}, 29:{s:67,a:1}, 30:{s:78,a:1} };
         
-        // --- Fonctions Utilitaires ---
         const fetchAPI = async (url) => {
             try {
                 const response = await fetch(url);
@@ -196,7 +193,8 @@
                     ${footer ? `<footer class="p-4 border-t border-surface flex-shrink-0">${footer}</footer>` : ''}
                 </div>`;
             dom.modalContainer.classList.remove('hidden');
-            dom.modalContainer.querySelector('.close-modal-btn').onclick = closeModal;
+            const closeBtn = dom.modalContainer.querySelector('.close-modal-btn');
+            if (closeBtn) closeBtn.onclick = closeModal;
             dom.modalContainer.onclick = (e) => { if (e.target === dom.modalContainer) closeModal(); };
         };
 
@@ -235,7 +233,6 @@
                 </div>`, 
                 `<button class="w-full bg-primary text-bg-deep font-bold py-2 px-4 rounded-md close-modal-btn">Commencer l'exploration</button>`
              );
-             dom.modalContainer.querySelector('.close-modal-btn').onclick = closeModal;
         };
 
         const updateRepeatIcon = () => {
@@ -286,7 +283,7 @@
 
         const getSurah = async (surahNumber, isInitialLoad = false) => {
              if (!isInitialLoad) dom.ayahContainer.innerHTML = showLoadingState(dom.ayahContainer);
-             state.tafsirData = null;
+             state.tafsirData = {};
              const endpoints = [
                  `${QURAN_API_BASE}/surah/${surahNumber}`, `${QURAN_API_BASE}/surah/${surahNumber}/${state.settings.translation}`,
                  `${QURAN_API_BASE}/surah/${surahNumber}/${state.settings.reciter}`, `${QURAN_API_BASE}/surah/${surahNumber}/en.transliteration`,
@@ -339,11 +336,11 @@
                     document.getElementById('bookmark-btn').onclick = () => { /* ... */ };
                     break;
                 case 'tafsir':
-                    if (!state.tafsirData) {
+                    if (!state.tafsirData[surahNum]) {
                         const tafsirRes = await fetchAPI(`${TAFSIR_API_BASE}/tafsirs/1/by_chapter/${surahNum}?per_page=500`);
-                        if(tafsirRes) state.tafsirData = tafsirRes.tafsirs;
+                        if(tafsirRes) state.tafsirData[surahNum] = tafsirRes.tafsirs;
                     }
-                    const tafsir = state.tafsirData?.find(t => t.verse_key === `${surahNum}:${ayahNum}`);
+                    const tafsir = state.tafsirData[surahNum]?.find(t => t.verse_key === `${surahNum}:${ayahNum}`);
                     dom.contextContent.innerHTML = tafsir ? `<div class="text-text-muted">${tafsir.text.replace(/<[^>]*>/g, '')}</div>` : 'Tafsir non disponible.';
                     break;
                 case 'notes':
@@ -420,7 +417,6 @@
             dom.zenModeBtn.onclick = () => dom.app.classList.toggle('zen-mode');
             dom.surahSearch.oninput = (e) => renderSurahList(e.target.value);
             
-            // Audio Listeners
             dom.audio.onplay = () => { dom.audioPlayPauseIcon.className = 'fas fa-pause'; dom.playSurahBtnIcon.className = 'fas fa-pause'; };
             dom.audio.onpause = () => { dom.audioPlayPauseIcon.className = 'fas fa-play'; dom.playSurahBtnIcon.className = 'fas fa-play'; };
             dom.audio.ontimeupdate = () => {
@@ -437,11 +433,10 @@
                 else if (state.settings.repeat === 'surah') { await handleAyahClick(1); }
             };
 
-            // Player Controls
             dom.audioPlayPause.onclick = () => dom.audio.paused ? playCurrentAyah() : dom.audio.pause();
             dom.playSurahBtn.onclick = () => {
                 if (dom.audio.paused) {
-                    if (dom.audio.currentTime > 0 && !dom.audio.ended) dom.audio.play(); else handleAyahClick(1);
+                    if (state.currentAyah !== 1 && dom.audio.currentTime > 0 && !dom.audio.ended) dom.audio.play(); else handleAyahClick(1);
                 } else {
                     dom.audio.pause();
                 }
