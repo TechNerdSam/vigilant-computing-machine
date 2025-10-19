@@ -313,7 +313,9 @@
             highlightActiveAyah(ayahNumber);
             renderContextPanel(document.querySelector('.context-tab.active').dataset.tab, true);
             await playCurrentAyah();
-            if (window.innerWidth < 1024) dom.contextPanel.classList.remove('translate-x-full');
+            if (window.innerWidth < 1024 && !dom.contextPanel.classList.contains('translate-x-full')) {
+                dom.contextPanel.classList.remove('translate-x-full');
+            }
         };
 
         const renderContextPanel = async (tab = 'tools', fromClick = true) => {
@@ -387,7 +389,9 @@
             if (!state.currentSurahData || !state.currentSurahData.audio.ayahs[state.currentAyah - 1]) return;
             try {
                 const audioSrc = state.currentSurahData.audio.ayahs[state.currentAyah - 1].audio;
-                if (dom.audio.src !== audioSrc) dom.audio.src = audioSrc;
+                if (dom.audio.src !== audioSrc) {
+                    dom.audio.src = audioSrc;
+                }
                 await dom.audio.play();
             } catch (error) {
                 if (error.name !== 'AbortError') {
