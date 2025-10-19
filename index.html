@@ -159,6 +159,7 @@
         const PLAYBACK_SPEEDS = [0.75, 1, 1.5, 2];
         const JUZ_START_POINTS = { 1:{s:1,a:1}, 2:{s:2,a:142}, 3:{s:2,a:253}, 4:{s:3,a:93}, 5:{s:4,a:24}, 6:{s:4,a:148}, 7:{s:5,a:82}, 8:{s:6,a:111}, 9:{s:7,a:88}, 10:{s:8,a:41}, 11:{s:9,a:93}, 12:{s:11,a:6}, 13:{s:12,a:53}, 14:{s:15,a:1}, 15:{s:17,a:1}, 16:{s:18,a:75}, 17:{s:21,a:1}, 18:{s:23,a:1}, 19:{s:25,a:21}, 20:{s:27,a:56}, 21:{s:29,a:46}, 22:{s:33,a:31}, 23:{s:36,a:28}, 24:{s:39,a:32}, 25:{s:41,a:47}, 26:{s:46,a:1}, 27:{s:51,a:31}, 28:{s:58,a:1}, 29:{s:67,a:1}, 30:{s:78,a:1} };
         
+        // --- Fonctions Utilitaires ---
         const fetchAPI = async (url) => {
             try {
                 const response = await fetch(url);
@@ -205,6 +206,9 @@
             return `${min}:${sec < 10 ? '0' : ''}${sec}`;
         };
 
+        const showLoadingState = (element) => { element.innerHTML = `<div class="text-center p-10"><i class="fas fa-spinner fa-spin fa-3x text-primary"></i></div>`; }
+
+        // --- Sauvegarde & Application des Paramètres ---
         const saveSettings = () => localStorage.setItem('quranSettings', JSON.stringify(state.settings));
         const saveLastRead = () => localStorage.setItem('lastRead', JSON.stringify(state.lastRead));
         const saveBookmarks = () => localStorage.setItem('quranBookmarks', JSON.stringify(state.bookmarks));
@@ -258,6 +262,7 @@
             }
         };
 
+        // --- Fonctions de Rendu ---
         const renderSurah = () => {
             if (!state.currentSurahData) return;
             const { arabic, transliteration } = state.currentSurahData;
@@ -281,9 +286,10 @@
              dom.juzList.innerHTML = Object.keys(JUZ_START_POINTS).map(juz => `<a href="#" data-juz-number="${juz}" class="juz-item flex items-center p-3 rounded-md hover:bg-base transition-all"><span class="text-xs text-center w-8 h-8 flex items-center justify-center rounded-full bg-base mr-3">${juz}</span><span class="font-bold text-main">Juz ${juz}</span></a>`).join('');
         };
 
+        // --- API & Données ---
         const getSurah = async (surahNumber, isInitialLoad = false) => {
              if (!isInitialLoad) dom.ayahContainer.innerHTML = showLoadingState(dom.ayahContainer);
-             state.tafsirData = {};
+             state.tafsirData[surahNumber] = null;
              const endpoints = [
                  `${QURAN_API_BASE}/surah/${surahNumber}`, `${QURAN_API_BASE}/surah/${surahNumber}/${state.settings.translation}`,
                  `${QURAN_API_BASE}/surah/${surahNumber}/${state.settings.reciter}`, `${QURAN_API_BASE}/surah/${surahNumber}/en.transliteration`,
@@ -310,11 +316,12 @@
             if (window.innerWidth < 1024) dom.contextPanel.classList.remove('translate-x-full');
         };
 
-        const renderContextPanel = async (tab, fromClick = false) => {
+        const renderContextPanel = async (tab = 'tools', fromClick = true) => {
             if (!state.currentSurahData || !state.currentAyah) {
-                dom.contextContent.innerHTML = `<div class="text-center text-gray-500 py-16"><i class="fas fa-hand-pointer fa-3x"></i><p class="mt-4">Sélectionnez un verset pour voir sa traduction et plus d'outils.</p></div>`;
+                dom.contextContent.innerHTML = `<div class="text-center text-gray-500 py-16"><i class="fas fa-hand-pointer fa-3x"></i><p class="mt-4">Cliquez sur un verset pour commencer.</p></div>`;
                 return;
             }
+
             const surahNum = state.currentSurahData.arabic.number;
             const ayahNum = state.currentAyah;
             const ayahIndex = ayahNum - 1;
@@ -325,35 +332,50 @@
                 case 'tools':
                     const isBookmarked = state.bookmarks.some(b => b.s === surahNum && b.a === ayahNum);
                     dom.contextContent.innerHTML = `
-                        <h3 class="font-bold text-lg mb-2">Verset ${surahNum}:${ayahNum}</h3>
-                        <p class="font-quran text-2xl text-right mb-4">${state.currentSurahData.arabic.ayahs[ayahIndex].text}</p>
+                        <h3 class="font-bold text-lg mb-2 text-main">Verset ${surahNum}:${ayahNum}</h3>
+                        <p class="font-quran text-2xl text-right mb-4 text-main">${state.currentSurahData.arabic.ayahs[ayahIndex].text}</p>
+                        <p class="mb-4 text-text-muted">${state.currentSurahData.translation.ayahs[ayahIndex].text}</p>
                         <div class="flex space-x-2">
-                            <button id="copy-btn" class="flex-1 bg-surface hover:bg-opacity-80 p-2 rounded-md"><i class="fas fa-copy mr-2"></i>Copier</button>
-                            <button id="bookmark-btn" class="flex-1 ${isBookmarked ? 'bg-accent text-bg-deep' : 'bg-surface'} hover:bg-opacity-80 p-2 rounded-md"><i class="fas fa-bookmark mr-2"></i>${isBookmarked ? 'Retirer' : 'Marquer'}</button>
-                        </div>
-                    `;
-                    document.getElementById('copy-btn').onclick = () => { /* ... */ };
-                    document.getElementById('bookmark-btn').onclick = () => { /* ... */ };
+                            <button id="copy-btn" class="flex-1 bg-surface hover:bg-opacity-80 p-2 rounded-md transition-colors"><i class="fas fa-copy mr-2"></i>Copier</button>
+                            <button id="bookmark-btn" class="flex-1 ${isBookmarked ? 'bg-accent text-bg-deep' : 'bg-surface'} hover:bg-opacity-80 p-2 rounded-md transition-colors"><i class="fas fa-bookmark mr-2"></i>${isBookmarked ? 'Retirer' : 'Marquer'}</button>
+                        </div>`;
+                    document.getElementById('copy-btn').onclick = () => {
+                        const text = `Coran ${surahNum}:${ayahNum}\n\n${state.currentSurahData.arabic.ayahs[ayahIndex].text}\n\n"${state.currentSurahData.translation.ayahs[ayahIndex].text}"`;
+                        navigator.clipboard.writeText(text).then(() => showNotification('Verset copié !'));
+                    };
+                    document.getElementById('bookmark-btn').onclick = () => {
+                        const bookmarkIndex = state.bookmarks.findIndex(b => b.s === surahNum && b.a === ayahNum);
+                        if (bookmarkIndex > -1) {
+                            state.bookmarks.splice(bookmarkIndex, 1);
+                            showNotification('Marque-page retiré.');
+                        } else {
+                            state.bookmarks.push({ s: surahNum, a: ayahNum, t: state.currentSurahData.arabic.ayahs[ayahIndex].text.substring(0, 40) + '...' });
+                            showNotification('Verset marqué !');
+                        }
+                        saveBookmarks();
+                        renderContextPanel('tools', true);
+                    };
                     break;
                 case 'tafsir':
                     if (!state.tafsirData[surahNum]) {
                         const tafsirRes = await fetchAPI(`${TAFSIR_API_BASE}/tafsirs/1/by_chapter/${surahNum}?per_page=500`);
                         if(tafsirRes) state.tafsirData[surahNum] = tafsirRes.tafsirs;
+                        else { dom.contextContent.innerHTML = 'Erreur de chargement du Tafsir.'; return; }
                     }
                     const tafsir = state.tafsirData[surahNum]?.find(t => t.verse_key === `${surahNum}:${ayahNum}`);
-                    dom.contextContent.innerHTML = tafsir ? `<div class="text-text-muted">${tafsir.text.replace(/<[^>]*>/g, '')}</div>` : 'Tafsir non disponible.';
+                    dom.contextContent.innerHTML = tafsir ? `<div class="prose">${tafsir.text.replace(/<[^>]*>/g, '')}</div>` : 'Tafsir non disponible pour ce verset.';
                     break;
                 case 'notes':
                     const noteKey = `${surahNum}:${ayahNum}`;
                     const noteText = state.notes[noteKey] || '';
                     dom.contextContent.innerHTML = `
-                        <h3 class="font-bold text-lg mb-2">Mes Notes sur ${surahNum}:${ayahNum}</h3>
-                        <textarea id="note-textarea" class="w-full bg-base border border-surface rounded-md p-2 h-48 resize-none">${noteText}</textarea>
-                        <button id="save-note-btn" class="mt-2 w-full bg-primary text-bg-deep font-bold py-2 rounded-md">Sauvegarder</button>
+                        <h3 class="font-bold text-lg mb-2 text-main">Mes Notes sur ${surahNum}:${ayahNum}</h3>
+                        <textarea id="note-textarea" class="w-full bg-white text-black border border-surface rounded-md p-2 h-48 resize-none">${noteText}</textarea>
+                        <button id="save-note-btn" class="mt-2 w-full bg-primary text-bg-deep font-bold py-2 rounded-md hover:opacity-90">Sauvegarder</button>
                     `;
                     document.getElementById('save-note-btn').onclick = () => {
                         const text = document.getElementById('note-textarea').value;
-                        if (text) state.notes[noteKey] = text; else delete state.notes[noteKey];
+                        if (text.trim()) state.notes[noteKey] = text; else delete state.notes[noteKey];
                         saveNotes();
                         showNotification('Note sauvegardée !');
                     };
@@ -365,9 +387,7 @@
             if (!state.currentSurahData || !state.currentSurahData.audio.ayahs[state.currentAyah - 1]) return;
             try {
                 const audioSrc = state.currentSurahData.audio.ayahs[state.currentAyah - 1].audio;
-                if (dom.audio.src !== audioSrc) {
-                    dom.audio.src = audioSrc;
-                }
+                if (dom.audio.src !== audioSrc) dom.audio.src = audioSrc;
                 await dom.audio.play();
             } catch (error) {
                 if (error.name !== 'AbortError') {
@@ -396,13 +416,14 @@
             }
         }
 
-        function showLoadingState(element) { element.innerHTML = `<div class="text-center p-10"><i class="fas fa-spinner fa-spin fa-3x text-primary"></i></div>`; }
-
         function setupEventListeners() {
+            // Panneaux
             dom.menuBtn.onclick = () => dom.sidebar.classList.remove('-translate-x-full');
             dom.closeSidebarBtn.onclick = () => dom.sidebar.classList.add('-translate-x-full');
             dom.contextPanelBtn.onclick = () => dom.contextPanel.classList.remove('translate-x-full');
             dom.closeContextPanelBtn.onclick = () => dom.contextPanel.classList.add('translate-x-full');
+            
+            // Onglets
             dom.sidebar.querySelectorAll('.nav-tab').forEach(t => t.onclick = (e) => {
                 dom.sidebar.querySelector('.nav-tab.active').classList.remove('active', 'bg-surface');
                 e.currentTarget.classList.add('active', 'bg-surface');
@@ -414,9 +435,12 @@
                  e.currentTarget.classList.add('active', 'bg-surface');
                  renderContextPanel(e.currentTarget.dataset.tab, true);
             });
+            
+            // Boutons
             dom.zenModeBtn.onclick = () => dom.app.classList.toggle('zen-mode');
             dom.surahSearch.oninput = (e) => renderSurahList(e.target.value);
             
+            // Audio
             dom.audio.onplay = () => { dom.audioPlayPauseIcon.className = 'fas fa-pause'; dom.playSurahBtnIcon.className = 'fas fa-pause'; };
             dom.audio.onpause = () => { dom.audioPlayPauseIcon.className = 'fas fa-play'; dom.playSurahBtnIcon.className = 'fas fa-play'; };
             dom.audio.ontimeupdate = () => {
@@ -436,7 +460,7 @@
             dom.audioPlayPause.onclick = () => dom.audio.paused ? playCurrentAyah() : dom.audio.pause();
             dom.playSurahBtn.onclick = () => {
                 if (dom.audio.paused) {
-                    if (state.currentAyah !== 1 && dom.audio.currentTime > 0 && !dom.audio.ended) dom.audio.play(); else handleAyahClick(1);
+                    if (dom.audio.currentTime > 0 && !dom.audio.ended) dom.audio.play(); else handleAyahClick(1);
                 } else {
                     dom.audio.pause();
                 }
