@@ -44,7 +44,13 @@
         html.theme-sepia .ayah.active { background-color: rgba(188, 108, 37, 0.1); border-right-color: var(--primary); }
         .glowing-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--primary), transparent); opacity: 0.5; }
         .tooltip { position: relative; display: inline-block; }
-        .tooltip .tooltip-text { visibility: hidden; background-color: var(--bg-deep); color: var(--text-main); text-align: center; border-radius: 6px; padding: 5px 10px; position: absolute; z-index: 50; bottom: 125%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
+        .tooltip .tooltip-text { 
+            visibility: hidden; background-color: var(--bg-deep); color: var(--text-main); 
+            text-align: center; border-radius: 6px; padding: 5px 10px; 
+            position: absolute; z-index: 50; 
+            top: 125%; left: 50%; transform: translateX(-50%); 
+            opacity: 0; transition: opacity 0.3s; white-space: nowrap; 
+        }
         .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
         .modal { backdrop-filter: blur(8px); }
         .zen-mode #sidebar, .zen-mode #context-panel, .zen-mode header, .zen-mode footer { display: none !important; }
@@ -56,6 +62,19 @@
         #note-textarea { color: black; }
         html.theme-sepia .text-main, html.theme-sepia .text-white { color: var(--text-main) !important; }
         html.theme-sepia .text-text-muted { color: var(--text-muted) !important; }
+        
+        /* Définition des classes de fond personnalisées */
+        .bg-base { background-color: var(--bg-base); }
+        .bg-surface { background-color: var(--bg-surface); }
+
+        /* Correction pour la couleur du texte dans les champs de sélection */
+        #modal-container select {
+            color: var(--text-main);
+        }
+        html.theme-light #modal-container select,
+        html.theme-sepia #modal-container select {
+            color: #111827; /* Forcer le texte en noir sur les thèmes clairs */
+        }
     </style>
 </head>
 <body class="overflow-hidden">
@@ -112,9 +131,8 @@
         <aside id="context-panel" class="context-panel w-full lg:w-96 flex-shrink-0 border-l border-white/10 flex flex-col h-screen absolute lg:relative transform translate-x-full lg:translate-x-0 z-30">
             <div class="p-2 border-b border-white/10 flex justify-between items-center">
                 <div class="flex bg-base rounded-md p-1">
-                    <button class="context-tab active w-1/3 p-2 rounded text-sm font-bold" data-tab="tools">Outils</button>
-                    <button class="context-tab w-1/3 p-2 rounded text-sm font-bold" data-tab="words">Mots</button>
-                    <button class="context-tab w-1/3 p-2 rounded text-sm font-bold" data-tab="notes">Notes</button>
+                    <button class="context-tab active w-1/2 p-2 rounded text-sm font-bold" data-tab="tools">Outils</button>
+                    <button class="context-tab w-1/2 p-2 rounded text-sm font-bold" data-tab="notes">Notes</button>
                 </div>
                 <button id="close-context-panel-btn" class="lg:hidden text-text-muted hover:text-main mr-2"><i class="fas fa-times fa-lg"></i></button>
             </div>
@@ -129,7 +147,7 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const state = {
-            surahs: [], wordsData: {},
+            surahs: [],
             lastRead: JSON.parse(localStorage.getItem('lastRead')) || { surah: 1, ayah: 1 },
             bookmarks: JSON.parse(localStorage.getItem('quranBookmarks')) || [],
             notes: JSON.parse(localStorage.getItem('quranNotes')) || {},
@@ -158,14 +176,13 @@
             contextPanelBtn: document.getElementById('context-panel-btn'), closeContextPanelBtn: document.getElementById('close-context-panel-btn'),
             settingsBtn: document.getElementById('settings-btn'), searchBtn: document.getElementById('search-btn'),
             bookmarksBtn: document.getElementById('bookmarks-btn'), prayerTimesBtn: document.getElementById('prayer-times-btn'),
-            historyBtn: document.getElementById('history-btn'), asmaBtn: document.getElementById('asma-btn'),
+            historyBtn: document.getElementById('history-btn'),
             zenModeBtn: document.getElementById('zen-mode-btn'), randomAyahBtn: document.getElementById('random-ayah-btn'),
             playSurahBtn: document.getElementById('play-surah-btn'),
             playSurahBtnIcon: document.querySelector('#play-surah-btn i'),
         };
         
         const QURAN_API_BASE = 'https://api.alquran.cloud/v1';
-        const WORDS_API_BASE = 'https://api.qurancdn.com/api/qdc';
         const TRANSLATIONS = { 'fr.hamidullah': 'M. Hamidullah', 'fr.leclerc': 'S. Leclerc' };
         const RECITERS = { 'ar.alafasy': 'Mishary Alafasy', 'ar.abdulbasitmurattal': 'Abdul Basit', 'ar.husary': 'Al-Husary' };
         const PLAYBACK_SPEEDS = [0.75, 1, 1.5, 2];
@@ -303,8 +320,8 @@
         const getSurah = async (surahNumber, isInitialLoad = false) => {
              if (!isInitialLoad) {
                 dom.ayahContainer.innerHTML = showLoadingState(dom.ayahContainer);
-                dom.surahHeaderH2.textContent = '';
-                dom.surahHeaderP.textContent = 'Chargement...';
+                dom.surahHeaderH2.textContent = 'Chargement...';
+                dom.surahHeaderP.textContent = '...';
              }
              const endpoints = [
                  `${QURAN_API_BASE}/surah/${surahNumber}`, `${QURAN_API_BASE}/surah/${surahNumber}/${state.settings.translation}`,
@@ -322,6 +339,8 @@
                  updateHistory(surahNumber, arabicRes.data.englishName);
              } else {
                  dom.ayahContainer.innerHTML = `<p class="text-center text-red-400">Erreur de chargement de la sourate.</p>`;
+                 dom.surahHeaderH2.textContent = 'Erreur';
+                 dom.surahHeaderP.textContent = 'Vérifiez votre connexion';
              }
         };
         
@@ -451,6 +470,13 @@
             
             dom.zenModeBtn.onclick = () => dom.app.classList.toggle('zen-mode');
             dom.surahSearch.oninput = (e) => renderSurahList(e.target.value);
+            dom.randomAyahBtn.onclick = () => {
+                const randomSurah = Math.floor(Math.random() * 114) + 1;
+                getSurah(randomSurah).then(() => {
+                    const randomAyah = Math.floor(Math.random() * state.currentSurahData.arabic.ayahs.length) + 1;
+                    handleAyahClick(randomAyah);
+                });
+            };
             
             dom.audio.onplay = () => { dom.audioPlayPauseIcon.className = 'fas fa-pause'; dom.playSurahBtnIcon.className = 'fas fa-pause'; };
             dom.audio.onpause = () => { dom.audioPlayPauseIcon.className = 'fas fa-play'; dom.playSurahBtnIcon.className = 'fas fa-play'; };
@@ -510,6 +536,57 @@
                         if (window.innerWidth < 768) dom.sidebar.classList.add('-translate-x-full');
                     }
                 }
+            };
+
+            // Modals
+            dom.settingsBtn.onclick = () => {
+                let content = `
+                    <div class="space-y-4">
+                        <div><label class="block mb-2">Thème</label><select id="theme-select" class="w-full bg-surface p-2 rounded">${Object.keys({'theme-warm':'Chaud', 'theme-dark':'Sombre', 'theme-light':'Clair', 'theme-sepia':'Sépia'}).map(k => `<option value="${k}" ${state.settings.theme === k ? 'selected' : ''}>${{'theme-warm':'Chaud', 'theme-dark':'Sombre', 'theme-light':'Clair', 'theme-sepia':'Sépia'}[k]}</option>`).join('')}</select></div>
+                        <div><label class="block mb-2">Taille de police</label><input type="range" id="font-size-slider" min="14" max="28" value="${state.settings.fontSize}" class="w-full"></div>
+                        <div><label class="block mb-2">Traduction</label><select id="translation-select" class="w-full bg-surface p-2 rounded">${Object.entries(TRANSLATIONS).map(([k, v]) => `<option value="${k}" ${state.settings.translation === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+                        <div><label class="block mb-2">Récitateur</label><select id="reciter-select" class="w-full bg-surface p-2 rounded">${Object.entries(RECITERS).map(([k, v]) => `<option value="${k}" ${state.settings.reciter === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+                        <div class="flex items-center justify-between"><label>Afficher la translittération</label><input type="checkbox" id="transliteration-toggle" ${state.settings.showTransliteration ? 'checked' : ''} class="h-6 w-6 rounded"></div>
+                    </div>
+                `;
+                renderModal('Réglages', content);
+                document.getElementById('theme-select').onchange = (e) => { state.settings.theme = e.target.value; applySettings(); saveSettings(); };
+                document.getElementById('font-size-slider').oninput = (e) => { state.settings.fontSize = e.target.value; applySettings(); };
+                document.getElementById('font-size-slider').onchange = () => saveSettings();
+                document.getElementById('translation-select').onchange = (e) => { state.settings.translation = e.target.value; getSurah(state.currentSurahData.arabic.number); saveSettings(); };
+                document.getElementById('reciter-select').onchange = (e) => { state.settings.reciter = e.target.value; getSurah(state.currentSurahData.arabic.number); saveSettings(); };
+                document.getElementById('transliteration-toggle').onchange = (e) => { state.settings.showTransliteration = e.target.checked; renderSurah(); saveSettings(); };
+            };
+
+            dom.searchBtn.onclick = () => {
+                let content = `
+                    <div class="flex space-x-2"><input type="text" id="search-input-modal" class="w-full bg-surface p-2 rounded" placeholder="Entrez un mot-clé..."><button id="exec-search-btn" class="bg-primary text-bg-deep px-4 rounded">Chercher</button></div>
+                    <div id="search-results" class="mt-4 max-h-64 overflow-y-auto"></div>
+                `;
+                renderModal('Recherche dans le Coran', content);
+                document.getElementById('exec-search-btn').onclick = async () => {
+                    const query = document.getElementById('search-input-modal').value;
+                    if (query.length < 3) return;
+                    const resultsContainer = document.getElementById('search-results');
+                    resultsContainer.innerHTML = showLoadingState(resultsContainer);
+                    const result = await fetchAPI(`${QURAN_API_BASE}/search/${query}/${state.settings.translation}`);
+                    if (result && result.data.matches.length > 0) {
+                        resultsContainer.innerHTML = result.data.matches.map(m => `
+                            <div class="p-2 border-b border-surface cursor-pointer" data-surah="${m.surah.number}" data-ayah="${m.numberInSurah}">
+                                <p class="font-bold">${m.surah.englishName} ${m.surah.number}:${m.numberInSurah}</p>
+                                <p class="text-text-muted">${m.text}</p>
+                            </div>
+                        `).join('');
+                        resultsContainer.querySelectorAll('[data-surah]').forEach(el => el.onclick = () => {
+                            getSurah(el.dataset.surah).then(() => {
+                                handleAyahClick(parseInt(el.dataset.ayah));
+                                closeModal();
+                            });
+                        });
+                    } else {
+                        resultsContainer.innerHTML = '<p>Aucun résultat trouvé.</p>';
+                    }
+                };
             };
         }
 
